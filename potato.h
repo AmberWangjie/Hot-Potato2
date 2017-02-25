@@ -14,10 +14,12 @@
 #define BUFF_LEN   512
 #define MAX_POTATO 512
 
-#define PLAYER_FIFO "/tmp/player_fifo"
+
 #define S "start"
 #define P "potato"
 #define E "end"
+//#define r "ready"
+//#define t "terminate"
 
 typedef struct potato {
   char msg_type;
@@ -28,7 +30,7 @@ typedef struct potato {
   /* }msg_type; */
   int total_hops;
   int hop_count;
-  
+  int total_player;
   unsigned long hop_trace[MAX_POTATO];
 } POTATO_T;
 
@@ -56,4 +58,57 @@ int readInt(char** linep, int* out){
   }
   *linep = temp; //update line pointer
   return 1; //succeeded
+}
+
+int selectfd(int fd1, int fd2, int fd3){
+  fd_set fds;
+  int maxfd;
+  int res;
+  char buf[BUFF_LEN];
+
+  FD_ZERO(&fds);
+  FD_SET(fd1, &fds);
+  FD_SET(fd2, &fds);
+  FD_SET(fd3, &fds);
+
+  int max1 = fd1 > fd2 ? fd1:fd2;
+  maxfd = fd3 > max1? fd3:max1;
+
+  select(maxfd + 1, &fds, NULL, NULL, NULL);
+  if(FD_ISSET(fd1, &fds)){
+    return fd1;
+  }
+  if(FD_ISSET(fd2, &fds)){
+    return fd2;
+  }
+  if(FD_ISSET(fd3, &fds)){
+    return fd3;
+  }
+}
+
+int selectAll(int fd_arr[], int size){
+  fd_set fds;
+  int maxfd;
+  int res;
+  char buf[BUFF_LEN];
+
+  FD_ZERO(&fds);
+  maxfd = fd_arr[0];
+  for(int i = 0; i < size; i++){
+    FD_SET(fd_arr[i], &fds);
+    if(fd_arr[i] > maxfd){
+      maxfd = fd_arr[i];
+    }
+  }
+  select(1024, &fds, NULL, NULL, NULL);
+
+  for(int i = 0; i < size; i++){
+    if(FD_ISSET(fd_arr[i], &fds)){
+      //return fd2;
+      res = fd_arr[i]; //or just return?
+      return res;
+    }
+    continue;
+  }
+  return res;
 }
